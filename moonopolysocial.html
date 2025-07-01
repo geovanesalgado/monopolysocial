@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desigualdade no Tabuleiro</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-setup, #game-over {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            width: 80%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        #game-setup label, #game-setup input, #game-setup button {
+            margin: 5px 0;
+            padding: 8px;
+        }
+
+        #player-inputs div {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #player-inputs label {
+            width: 120px;
+            text-align: right;
+        }
+
+        #game-board {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+            padding: 20px 0;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        #board {
+            --square-size: 120px; 
+            
+            display: grid;
+            grid-template-columns: repeat(10, var(--square-size));
+            grid-template-rows: repeat(5, var(--square-size));
+            
+            width: calc(10 * var(--square-size));
+            height: calc(5 * var(--square-size));
+            
+            border: 2px solid #333;
+            background-color: #eee;
+            position: relative;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .square {
+            width: var(--square-size);
+            height: var(--square-size);
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: lightgoldenrodyellow;
+            position: relative;
+            text-align: center;
+            padding: 2px;
+            overflow: hidden;
+            transition: border-color 0.3s ease-in-out;
+        }
+
+        .square-name {
+            font-weight: bold;
+            font-size: 1em;
+            line-height: 1.2;
+        }
+        .square-info {
+            font-size: 0.9em;
+            line-height: 1.2;
+            margin-top: 2px;
+        }
+        
+        .square-rent {
+            font-size: 0.8em; 
+            font-style: italic; 
+            line-height: 1.2;
+            margin-top: 2px;
+            color: #333; 
+            font-weight: normal; 
+        }
+
+        .square.owned-by-player {
+            border-width: 4px; 
+            border-style: solid;
+        }
+
+        .start-square { background-color: #aaffaa; }
+        .jail-square { background-color: #ffaaaa; }
+        .property-type-A { background-color: #D3D3D3; }
+        .property-type-B { background-color: #ADD8E6; }
+        .property-type-C { background-color: #90EE90; }
+        .property-type-D { background-color: #FFB6C1; }
+        .tax-square { background-color: #FF6347; color: white; }
+        .event-square { background-color: #FFFACD; }
+        .math-quiz-square { background-color: #B0E0E6; }
+
+
+        .square:nth-child(1) { grid-area: 1 / 1; }
+        .square:nth-child(2) { grid-area: 1 / 2; }
+        .square:nth-child(3) { grid-area: 1 / 3; }
+        .square:nth-child(4) { grid-area: 1 / 4; }
+        .square:nth-child(5) { grid-area: 1 / 5; }
+        .square:nth-child(6) { grid-area: 1 / 6; }
+        .square:nth-child(7) { grid-area: 1 / 7; }
+        .square:nth-child(8) { grid-area: 1 / 8; }
+        .square:nth-child(9) { grid-area: 1 / 9; }
+        .square:nth-child(10) { grid-area: 1 / 10; }
+
+        .square:nth-child(11) { grid-area: 2 / 10; }
+        .square:nth-child(12) { grid-area: 3 / 10; }
+        .square:nth-child(13) { grid-area: 4 / 10; }
+        .square:nth-child(14) { grid-area: 5 / 10; }
+        .square:nth-child(15) { grid-area: 5 / 9; }
+
+        .square:nth-child(16) { grid-area: 5 / 8; }
+        .square:nth-child(17) { grid-area: 5 / 7; }
+        .square:nth-child(18) { grid-area: 5 / 6; }
+        .square:nth-child(19) { grid-area: 5 / 5; }
+        .square:nth-child(20) { grid-area: 5 / 4; }
+        .square:nth-child(21) { grid-area: 5 / 3; }
+        .square:nth-child(22) { grid-area: 5 / 2; }
+        .square:nth-child(23) { grid-area: 5 / 1; }
+        .square:nth-child(24) { grid-area: 4 / 1; }
+
+        .square:nth-child(25) { grid-area: 3 / 1; }
+        .square:nth-child(26) { grid-area: 2 / 1; }
+
+
+        .player-token {
+            position: absolute;
+            width: calc(var(--square-size) * 0.20); 
+            height: calc(var(--square-size) * 0.20); 
+            border-radius: 50%;
+            border: 1px solid black;
+            box-sizing: border-box;
+            text-align: center;
+            line-height: calc(var(--square-size) * 0.20); 
+            font-size: 0.7em;
+            color: white;
+            font-weight: bold;
+            transition: top 0.5s ease-out, left 0.5s ease-out;
+            z-index: 10;
+        }
+
+        #game-info {
+            position: absolute; 
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); 
+            z-index: 20; 
+            background-color: rgba(0, 0, 0, 0); 
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 'none';
+            min-width: 400px; 
+            max-width: 80%; 
+            text-align: center;
+            font-size: 1.1em;
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #status { 
+            display: none; 
+        }
+
+        #players-status {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: -65px;
+        }
+
+        .player-card {
+            background-color: #e2e2e2;
+            padding: 10px;
+            border-radius: 5px;
+            width: 150px;
+            text-align: left;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .player-card.current-turn {
+            border: 2px solid #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+            background-color: #eaf5ff;
+        }
+
+        .player-card.bankrupt {
+            opacity: 0.5;
+            text-decoration: line-through;
+            border: 1px dashed red;
+        }
+
+        .player-card.in-jail {
+            border: 2px solid #FF8C00;
+            box-shadow: 0 0 5px rgba(255, 140, 0, 0.5);
+            background-color: #fff0e0;
+        }
+
+        #roll-dice-btn {
+            padding: 12px 25px;
+            font-size: 1.2em;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        #roll-dice-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        #restart-btn {
+            padding: 10px 20px;
+            font-size: 1.1em;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #math-quiz-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            z-index: 30;
+            width: 90%;
+            max-width: 600px;
+            display: none;
+        }
+        #quiz-question {
+            font-size: 1.6em;
+            margin-bottom: 25px;
+            color: #333;
+        }
+        #quiz-alternatives {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .quiz-btn {
+            padding: 15px 25px;
+            font-size: 1.2em;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .quiz-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* Estilo para o pop-up de mensagem geral */
+        #message-popup {
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100; 
+            display: none; 
+        }
+
+        #message-content {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            font-size: 2em; 
+            color: #333;
+            max-width: 70%;
+            line-height: 1.4;
+        }
+
+        #confirm-message-btn {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: background-color 0.3s ease;
+        }
+        #confirm-message-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* Pop-up para compra de propriedade */
+        #buy-property-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 110; 
+            display: none;
+        }
+
+        #buy-property-content {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            font-size: 1.8em;
+            color: #333;
+            max-width: 70%;
+            line-height: 1.4;
+        }
+        
+        /* Estilos para as novas informações no pop-up de compra */
+        #buy-property-info {
+            font-size: 0.8em; 
+            margin-top: 15px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            color: #555;
+        }
+        #buy-property-info strong {
+            color: #000;
+        }
+
+        #buy-property-buttons {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        #buy-property-buttons button {
+            padding: 15px 30px;
+            font-size: 1.3em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #buy-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        #buy-btn:hover {
+            background-color: #218838;
+        }
+
+        #decline-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        #decline-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* Pop-up para sair da prisão */
+        #jail-options-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 120; 
+            display: none;
+        }
+
+        #jail-options-content {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            font-size: 1.8em;
+            color: #333;
+            max-width: 70%;
+            line-height: 1.4;
+        }
+
+        #jail-options-buttons {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        #jail-options-buttons button {
+            padding: 15px 30px;
+            font-size: 1.3em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #pay-bail-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        #pay-bail-btn:hover {
+            background-color: #0056b3;
+        }
+
+        #wait-jail-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+        #wait-jail-btn:hover {
+            background-color: #5a6268;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="game-setup">
+        <h2>Configurar Jogo</h2>
+        <label for="num-players">Número de Jogadores (3-6):</label>
+        <input type="number" id="num-players" min="3" max="6" value="3" onchange="generatePlayerInputs()">
+        <div id="player-inputs">
+            </div>
+        <button onclick="startGame()">Iniciar Jogo</button>
+    </div>
+
+    <div id="game-board" style="display: none;">
+        <div id="game-info">
+            <div id="players-status"></div>
+        </div>
+        <div id="board">
+            <div class="square" id="square-0"></div>
+            <div class="square" id="square-1"></div>
+            <div class="square" id="square-2"></div>
+            <div class="square" id="square-3"></div>
+            <div class="square" id="square-4"></div>
+            <div class="square" id="square-5"></div>
+            <div class="square" id="square-6"></div>
+            <div class="square" id="square-7"></div>
+            <div class="square" id="square-8"></div>
+            <div class="square" id="square-9"></div>
+            <div class="square" id="square-10"></div>
+            <div class="square" id="square-11"></div>
+            <div class="square" id="square-12"></div>
+            <div class="square" id="square-13"></div>
+            <div class="square" id="square-14"></div>
+            <div class="square" id="square-15"></div>
+            <div class="square" id="square-16"></div>
+            <div class="square" id="square-17"></div>
+            <div class="square" id="square-18"></div>
+            <div class="square" id="square-19"></div>
+            <div class="square" id="square-20"></div>
+            <div class="square" id="square-21"></div>
+            <div class="square" id="square-22"></div>
+            <div class="square" id="square-23"></div>
+            <div class="square" id="square-24"></div>
+            <div class="square" id="square-25"></div>
+        </div>
+        <button id="roll-dice-btn" onclick="rollDice()">Lançar Dado</button>
+    </div>
+
+    <div id="math-quiz-container">
+        <p id="quiz-question"></p>
+        <div id="quiz-alternatives">
+            </div>
+    </div>
+
+    <div id="message-popup">
+        <div id="message-content">
+            <p id="popup-text"></p>
+            <button id="confirm-message-btn" onclick="hideMessagePopup()">Confirmar</button>
+        </div>
+    </div>
+
+    <div id="buy-property-popup">
+        <div id="buy-property-content">
+            <p id="buy-property-text"></p>
+            <p id="buy-property-info"></p> 
+            <div id="buy-property-buttons">
+                <button id="buy-btn" onclick="handleBuyProperty(true)">Comprar</button>
+                <button id="decline-btn" onclick="handleBuyProperty(false)">Não Comprar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="jail-options-popup">
+        <div id="jail-options-content">
+            <p id="jail-popup-text"></p>
+            <p id="jail-popup-info"></p>
+            <div id="jail-options-buttons">
+                <button id="pay-bail-btn" onclick="handleJailOption(true)">Pagar Fiança ($500)</button>
+                <button id="wait-jail-btn" onclick="handleJailOption(false)">Esperar a Próxima Rodada</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over" style="display: none;">
+        <h2>Fim de Jogo!</h2>
+        <p id="winner-message"></p>
+        <button id="restart-btn" onclick="location.reload()">Reiniciar Jogo</button>
+    </div>
+
+    <script>
+        let players = [];
+        let currentPlayerIndex = 0; 
+        const boardSize = 26; 
+        let squarePositions = [];
+        let boardSquares = [];
+        let currentPropertyForPurchase = null; 
+        let gameStartedAndFirstTurnPending = false; 
+        let bailPaidThisTurn = false;
+	let pendingSquareEffect = null;
+
+        // Modificado: Agora playerColors mapeia IDs de time para cores
+        const teamColors = ['#FF5733', '#33FF57', '#3357FF']; // Vermelho, Verde, Azul
+        // Adicionado: Nomes das cores para referência no código, não exibição no card
+        const teamColorNames = ['Vermelho', 'Verde', 'Azul']; 
+        const TOKEN_OFFSET_RADIUS = 0.3; 
+        const JAIL_BAIL_AMOUNT = 500; 
+
+        const propertyTypes = {
+            'A': { price: 500, rent: 250 },
+            'B': { price: 1000, rent: 500 },
+            'C': { price: 1500, rent: 750 },
+            'D': { price: 2000, rent: 1000 }
+        };
+
+        const boardConfig = [
+            { id: 0, name: 'INÍCIO', type: 'start' },
+            { id: 1, name: 'Terreno Baldio', type: 'property', propertyType: 'A' },
+            { id: 2, name: 'Casa', type: 'property', propertyType: 'B' },
+            { id: 3, name: 'Cobertura', type: 'property', propertyType: 'C' },
+            { id: 4, name: 'Mansão', type: 'property', propertyType: 'D' },
+            { id: 5, name: 'QUIZ MATEMÁTICO', type: 'math-quiz' },
+            { id: 6, name: 'Barraco', type: 'property', propertyType: 'A' },
+            { id: 7, name: 'Restaurante', type: 'property', propertyType: 'B' },
+            { id: 8, name: 'Banco', type: 'property', propertyType: 'C' },
+            { id: 9, name: 'PRISÃO', type: 'jail' }, 
+            { id: 10, name: 'Imposto', type: 'tax' },
+            { id: 11, name: 'Ilha Privada', type: 'property', propertyType: 'D' },
+            { id: 12, name: 'AVANCE 6 CASAS', type: 'event' },
+            { id: 13, name: 'QUIZ MATEMÁTICO', type: 'math-quiz' },
+            { id: 14, name: 'Quitinete', type: 'property', propertyType: 'A' },
+            { id: 15, name: 'Apartamento', type: 'property', propertyType: 'B' },
+            { id: 16, name: 'Clube de Golfe', type: 'property', propertyType: 'C' },
+            { id: 17, name: 'Iate Clube', type: 'property', propertyType: 'D' }, 
+            { id: 18, name: 'QUIZ MATEMÁTICO', type: 'math-quiz' },
+            { id: 19, name: 'Mecânica', type: 'property', propertyType: 'A' },
+            { id: 20, name: 'Loja', type: 'property', propertyType: 'B' },
+            { id: 21, name: 'Prédio Comercial', type: 'property', propertyType: 'C' },
+            { id: 22, name: 'PRISÃO', type: 'jail' }, 
+            { id: 23, name: 'Imposto', type: 'tax' }, 
+            { id: 24, name: 'Hotel 5 Estrelas', type: 'property', propertyType: 'D' },
+            { id: 25, name: 'AVANCE 6 CASAS', type: 'event' } 
+        ];
+
+        const mathQuizQuestions = [
+            {
+                question: "Quanto é 75 dividido por 3?",
+                alternatives: ["20", "25", "30", "15"],
+                correctAnswer: 1 
+            },
+            {
+                question: "Se você tem 4 caixas e cada caixa tem 12 lápis, quantos lápis você tem no total?",
+                alternatives: ["16", "36", "48", "24"],
+                correctAnswer: 2 
+            },
+            {
+                question: "Qual é o valor de 0,5 + 0,25?",
+                alternatives: ["0,7", "0,8", "0,75", "1,0"],
+                correctAnswer: 2 
+            },
+            {
+                question: "Se uma pizza tem 8 fatias e você comeu 1/4 dela, quantas fatias sobraram?",
+                alternatives: ["2", "4", "6", "8"],
+                correctAnswer: 2 
+            },
+            {
+                question: "Qual é o resultado de 15 x 6?",
+                alternatives: ["80", "90", "75", "100"],
+                correctAnswer: 1 
+            },
+            {
+                question: "Um trem viaja a 60 km/h. Quanto tempo ele leva para percorrer 180 km?",
+                alternatives: ["1 hora", "2 horas", "3 horas", "4 horas"],
+                correctAnswer: 2 
+            },
+            {
+                question: "Qual é a área de um quadrado com lado de 7 metros?",
+                alternatives: ["14 m²", "28 m²", "49 m²", "35 m²"],
+                correctAnswer: 2 
+            },
+            {
+                question: "Transforme 1/2 em porcentagem.",
+                alternatives: ["10%", "25%", "50%", "100%"],
+                correctAnswer: 2 
+            },
+{
+                question: "Qual fração é maior: 3/4 ou 5/6?",
+                alternatives: ["3/4", "5/6"],
+                correctAnswer: 1 // 5/6 é maior
+            },
+            {
+                question: "Qual fração é menor: 2/5 ou 3/8?",
+                alternatives: ["2/5", "3/8"],
+                correctAnswer: 1 // 3/8 é menor
+            },
+            {
+                question: "As frações 1/2 e 5/10 são equivalentes?",
+                alternatives: ["Sim", "Não"],
+                correctAnswer: 0 // Sim, são equivalentes
+            }
+        ];
+
+        window.onload = function() {
+            generatePlayerInputs();
+            initializeBoardSquares();
+        };
+
+        function initializeBoardSquares() {
+            boardSquares = boardConfig.map(config => {
+                let square = { ...config, owner: null }; 
+                if (square.type === 'property') {
+                    square.price = propertyTypes[square.propertyType].price;
+                    square.rent = propertyTypes[square.propertyType].rent;
+                }
+                return square;
+            });
+
+            const domSquares = document.querySelectorAll('#board .square');
+            domSquares.forEach((domSquare, index) => {
+                const boardSquare = boardSquares[index]; 
+                domSquare.innerHTML = `<span class="square-name">${boardSquare.name}</span>`;
+                domSquare.className = 'square'; 
+                if (boardSquare.type === 'property') {
+                    domSquare.classList.add(`property-type-${boardSquare.propertyType}`);
+                    domSquare.innerHTML += `<span class="square-info">($${boardSquare.price})</span>`;
+                    domSquare.innerHTML += `<span class="square-rent" id="rent-${boardSquare.id}"></span>`;
+                } else if (boardSquare.type === 'start') {
+                    domSquare.classList.add('start-square');
+                } else if (boardSquare.type === 'jail') {
+                    domSquare.classList.add('jail-square');
+                } else if (boardSquare.type === 'tax') {
+                    domSquare.classList.add('tax-square');
+                } else if (boardSquare.type === 'event') {
+                    domSquare.classList.add('event-square');
+                } else if (boardSquare.type === 'math-quiz') {
+                    domSquare.classList.add('math-quiz-square');
+                }
+            });
+        }
+
+        function calculateSquarePositions() {
+            const boardElement = document.getElementById('board');
+            if (!boardElement) {
+                console.error("Elemento '#board' não encontrado.");
+                return;
+            }
+
+            const squares = boardElement.querySelectorAll('.square');
+            squarePositions = [];
+            squares.forEach((square, index) => {
+                const boardSquareId = boardConfig[index].id;
+                const rect = square.getBoundingClientRect();
+                const boardRect = boardElement.getBoundingClientRect();
+                
+                // Posição central da casa
+                squarePositions[boardSquareId] = { 
+                    top: (rect.top - boardRect.top) + (square.offsetHeight / 2),
+                    left: (rect.left - boardRect.left) + (square.offsetWidth / 2),
+                    width: square.offsetWidth,
+                    height: square.offsetHeight
+                };
+            });
+        }
+
+        function movePlayerToken(player) {
+            if (!player.tokenElement || !squarePositions[player.position]) {
+                console.warn(`Token ou posição inválida para o jogador ${player.name} na posição ${player.position}`);
+                return;
+            }
+
+            const currentSquare = squarePositions[player.position];
+            
+            const playersOnSameSquare = players.filter(p => p.position === player.position && !p.isBankrupt);
+            
+            const numPlayersOnSquare = playersOnSameSquare.length;
+            const tokenSize = player.tokenElement.offsetWidth; 
+
+            let offsetX = 0;
+            let offsetY = 0;
+
+            if (numPlayersOnSquare > 1) {
+                const angleIncrement = (2 * Math.PI) / numPlayersOnSquare;
+                const playerIndexOnSquare = playersOnSameSquare.findIndex(p => p.id === player.id);
+                const angle = angleIncrement * playerIndexOnSquare;
+
+                const radius = (currentSquare.width / 2) * TOKEN_OFFSET_RADIUS; 
+
+                offsetX = radius * Math.cos(angle);
+                offsetY = radius * Math.sin(angle);
+            }
+
+            const adjustedLeft = currentSquare.left + offsetX - (tokenSize / 2);
+            const adjustedTop = currentSquare.top + offsetY - (tokenSize / 2);
+
+            player.tokenElement.style.top = `${adjustedTop}px`;
+            player.tokenElement.style.left = `${adjustedLeft}px`;
+        }
+
+        function generatePlayerInputs() {
+            const numPlayers = document.getElementById('num-players').value;
+            const playerInputsDiv = document.getElementById('player-inputs');
+            playerInputsDiv.innerHTML = '';
+
+            for (let i = 0; i < numPlayers; i++) {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label for="player-name-${i}">Jogador ${i + 1} (Equipe):</label>
+                    <input type="text" id="player-name-${i}" value="Equipe ${i + 1}" required>
+                    <label for="player-money-${i}">Dinheiro Inicial:</label>
+                    <input type="number" id="player-money-${i}" value="${(i === 0) ? 10000 : (i === 1 ? 5000 : (i === 2 ? 2000 : (i === 3 ? 1000 : 500)))}" min="100" required>
+                `;
+                playerInputsDiv.appendChild(div);
+            }
+        }
+
+        function startGame() {
+            const numPlayers = document.getElementById('num-players').value;
+            players = [];
+            for (let i = 0; i < numPlayers; i++) {
+                const name = document.getElementById(`player-name-${i}`).value;
+                const money = parseInt(document.getElementById(`player-money-${i}`).value);
+                // Atribui a cor da equipe (0:vermelho, 1:verde, 2:azul) baseada no ID do jogador
+                const teamId = i % teamColors.length; 
+                if (name && !isNaN(money) && money > 0) {
+                    players.push({
+                        id: i,
+                        name: name,
+                        money: money,
+                        position: 0,
+                        isBankrupt: false,
+                        inJail: 0, 
+                        tokenElement: null,
+                        teamColorId: teamId 
+                    });
+                } else {
+                    alert('Por favor, preencha o nome e um valor de dinheiro válido para todos os jogadores.');
+                    return;
+                }
+            }
+
+            if (players.length < 3) {
+                alert('Você precisa de pelo menos 3 jogadores para começar.');
+                return;
+            }
+
+            currentPlayerIndex = 0; 
+
+            document.getElementById('game-setup').style.display = 'none';
+            document.getElementById('game-board').style.display = 'flex';
+
+            calculateSquarePositions(); 
+            createPlayerTokens(); 
+            updateGameStatus();
+            highlightCurrentPlayer();
+            
+            gameStartedAndFirstTurnPending = true;
+            showMessagePopup(`Jogo iniciado! É a vez de ${players[currentPlayerIndex].name}.`);
+        }
+
+        function createPlayerTokens() {
+            const boardElement = document.getElementById('board');
+            if (!boardElement) {
+                console.error("Elemento '#board' não encontrado ao criar tokens.");
+                return;
+            }
+            players.forEach(player => {
+                const token = document.createElement('div');
+                token.classList.add('player-token');
+                token.id = `player-token-${player.id}`;
+                // Usa a cor da equipe definida para o token
+                token.style.backgroundColor = teamColors[player.teamColorId];
+                token.textContent = player.id + 1; // Mantém o número do jogador
+                boardElement.appendChild(token);
+                player.tokenElement = token;
+                movePlayerToken(player); 
+            });
+        }
+
+        function rollDice() {
+            const currentPlayer = players[currentPlayerIndex];
+
+            if (currentPlayer.inJail > 0) {
+                showJailOptionsPopup(currentPlayer);
+                return; 
+            }
+
+            document.getElementById('roll-dice-btn').disabled = true; 
+
+            let diceValueInput = prompt(`É a vez de ${currentPlayer.name}.\nPor favor, insira o valor tirado no dado (1-6):`);
+            let diceValue = parseInt(diceValueInput);
+
+            if (isNaN(diceValue) || diceValue < 1 || diceValue > 6) {
+                alert("Valor inválido! Por favor, insira um número entre 1 e 6.");
+                document.getElementById('roll-dice-btn').disabled = false; 
+                return; 
+            }
+            
+            // Alteração: Mensagem inicial não menciona o valor do dado
+            let message = `${currentPlayer.name} `; 
+
+            let steps = 0;
+            const moveInterval = setInterval(() => {
+                if (steps < diceValue) {
+                    const oldPosition = currentPlayer.position; 
+                    currentPlayer.position = (currentPlayer.position + 1);
+                    if (currentPlayer.position >= boardSize) {
+                        currentPlayer.position = currentPlayer.position % boardSize;
+                        if (oldPosition !== 0 && currentPlayer.position >=0 && oldPosition < boardSize && currentPlayer.position < oldPosition) {
+                             currentPlayer.money += 200;
+                             // Adiciona ao final da mensagem, se for o caso
+                             message += ` Passou pelo INÍCIO e ganhou $200!`; 
+                        }
+                    }
+                    movePlayerToken(currentPlayer); 
+                    steps++;
+                } else {
+                    clearInterval(moveInterval);
+                    applySquareEffect(currentPlayer, message); 
+                }
+            }, 300); 
+        }
+
+        function showMessagePopup(message) {
+            document.getElementById('popup-text').textContent = message; 
+            document.getElementById('message-popup').style.display = 'flex';
+            document.getElementById('roll-dice-btn').disabled = true; 
+        }
+
+        function hideMessagePopup() {
+            document.getElementById('message-popup').style.display = 'none';
+
+            if (pendingSquareEffect) {
+                // Se há um efeito pendente (ex: de avançar casas em 'Sorte')
+                const effect = pendingSquareEffect;
+                pendingSquareEffect = null; // Limpa a flag
+
+                if (effect.type === 'advance_event') {
+                    // Era um evento de 'avançar X casas'. Agora, aplica o efeito da *nova* casa.
+                    // A mensagem inicial para esta chamada recursiva será sobre o jogador ter parado na nova casa.
+                    applySquareEffect(effect.player, `${effect.player.name} parou em: `);
+                }
+                // Não chama finishTurn aqui, pois applySquareEffect irá eventualmente acioná-lo ou outro popup.
+                return; // Importante: impede que finishTurn seja chamado prematuramente
+            }
+
+            // Lógica original para outros popups de mensagem
+            if (gameStartedAndFirstTurnPending) {
+                document.getElementById('roll-dice-btn').disabled = false;
+                gameStartedAndFirstTurnPending = false;
+            } else {
+                if (!bailPaidThisTurn) {
+                    finishTurn();
+                } else {
+                    document.getElementById('roll-dice-btn').disabled = false;
+                    bailPaidThisTurn = false;
+                }
+            }
+        }
+
+        function applySquareEffect(player, initialMessage) {
+            const currentSquare = boardSquares[player.position];
+            let newStatusMessage = initialMessage; 
+
+            switch (currentSquare.type) {
+                case 'start':
+                    newStatusMessage += `caiu no INÍCIO.`; 
+                    showMessagePopup(newStatusMessage);
+                    break; 
+                case 'property':
+                    if (currentSquare.owner === null) { 
+                        if (player.money >= currentSquare.price) {
+                            currentPropertyForPurchase = currentSquare; 
+                            const buyMessage = `${player.name}, caiu em "${currentSquare.name}".`;
+                            const infoMessage = `Seu dinheiro: <strong>$${player.money}</strong><br>Preço da propriedade: <strong>$${currentSquare.price}</strong><br>Aluguel: <strong>$${currentSquare.rent}</strong>`;
+                            showBuyPropertyPopup(buyMessage, infoMessage);
+                        } else {
+                            newStatusMessage += `não tem dinheiro para comprar "${currentSquare.name}" ($${currentSquare.price}).`;
+                            showMessagePopup(newStatusMessage); 
+                        }
+                    } else if (currentSquare.owner !== player.id) { 
+                        const ownerPlayer = players.find(p => p.id === currentSquare.owner);
+                        
+                        // NOVO: Verifica se o jogador que caiu e o proprietário são do mesmo "time" (mesma cor)
+                        if (ownerPlayer && !ownerPlayer.isBankrupt && player.teamColorId === ownerPlayer.teamColorId) {
+                            // Alteração aqui: mensagem simplificada e focada no time
+                            newStatusMessage += `caiu na propriedade do time ${teamColorNames[player.teamColorId]}, então NÃO paga aluguel.`;
+                            showMessagePopup(newStatusMessage);
+                            break; 
+                        }
+
+                        // Lógica de aluguel normal se não for do mesmo time ou se o dono estiver falido
+                        if (ownerPlayer && !ownerPlayer.isBankrupt) { 
+                            const rentAmount = currentSquare.rent;
+                            if (player.money >= rentAmount) {
+                                player.money -= rentAmount;
+                                ownerPlayer.money += rentAmount;
+                                newStatusMessage += `pagou aluguel de $${rentAmount} para ${ownerPlayer.name} em "${currentSquare.name}".`;
+                            } else {
+                                newStatusMessage += `não tem dinheiro para pagar aluguel de $${rentAmount} para ${ownerPlayer.name} em "${currentSquare.name}". Você faliu!`;
+                                player.money = 0; 
+                                checkBankruptcy(player); 
+                            }
+                        } else {
+                            newStatusMessage += `caiu em "${currentSquare.name}", mas o dono já faliu! Nada para pagar.`;
+                        }
+                        showMessagePopup(newStatusMessage); 
+                    } else { 
+                        newStatusMessage += `caiu na sua propriedade "${currentSquare.name}".`;
+                        showMessagePopup(newStatusMessage); 
+                    }
+                    break;
+                case 'event': 
+                    case 'event':
+                    const stepsToAdvance = 6;
+                    newStatusMessage += `caiu na Sorte! Você avança ${stepsToAdvance} casas.`;
+                    
+                    const oldPositionForAdvance = player.position;
+                    
+                    player.position = (player.position + stepsToAdvance);
+                    
+                    if (player.position >= boardSize) {
+                        player.position = player.position % boardSize;
+                        if (oldPositionForAdvance < boardSize && player.position < oldPositionForAdvance || Math.floor((oldPositionForAdvance + stepsToAdvance) / boardSize) > 0) {
+                            player.money += 200;
+                            newStatusMessage += ` Passou pelo INÍCIO e ganhou $200!`;
+                        }
+                    }
+                    
+                    movePlayerToken(player); // Move o token para a nova posição
+                    
+                    // NOVO: Define um efeito pendente a ser processado após o usuário confirmar a mensagem
+                    pendingSquareEffect = { type: 'advance_event', player: player };
+                    
+                    showMessagePopup(newStatusMessage);
+                    // NÃO chama applySquareEffect recursivamente aqui diretamente.
+                    // Isso será tratado por hideMessagePopup após a confirmação do usuário.
+                    return; // Retorna para evitar o finishTurn imediato e permitir o processamento da nova casa após confirmação
+                    break; 
+                case 'tax': 
+                    const taxAmount = Math.floor(player.money * 0.10); 
+                    player.money -= taxAmount;
+                    newStatusMessage += `caiu no IMPOSTO! Perdeu $${taxAmount} (10% do seu dinheiro).`;
+                    showMessagePopup(newStatusMessage);
+                    break; 
+                case 'jail': 
+                    player.inJail = 1; 
+                    newStatusMessage += `caiu na PRISÃO! Fica 1 rodada sem jogar.`;
+                    const playerCard = document.getElementById(`player-card-${player.id}`);
+                    if(playerCard) {
+                        playerCard.classList.add('in-jail'); 
+                    }
+                    showMessagePopup(newStatusMessage);
+                    break; 
+                case 'math-quiz':
+                    newStatusMessage += `caiu no QUIZ MATEMÁTICO!`;
+                    showMessagePopup(newStatusMessage); 
+                    startMathQuiz(player); 
+                    return; 
+            }
+        }
+
+        function showBuyPropertyPopup(message, info) {
+            document.getElementById('buy-property-text').textContent = message; 
+            document.getElementById('buy-property-info').innerHTML = info; 
+            document.getElementById('buy-property-popup').style.display = 'flex';
+            document.getElementById('roll-dice-btn').disabled = true; 
+        }
+
+        function hideBuyPropertyPopup() {
+            document.getElementById('buy-property-popup').style.display = 'none';
+        }
+
+        function handleBuyProperty(willBuy) {
+            const currentPlayer = players[currentPlayerIndex];
+            const property = currentPropertyForPurchase;
+            let message = "";
+
+            if (willBuy) {
+                if (currentPlayer.money >= property.price) {
+                    currentPlayer.money -= property.price;
+                    property.owner = currentPlayer.id;
+                    
+                    const domSquare = document.getElementById(`square-${property.id}`);
+                    if (domSquare) {
+                        domSquare.classList.add('owned-by-player');
+                        // Usa a cor da equipe para a borda da propriedade
+                        domSquare.style.borderColor = teamColors[currentPlayer.teamColorId];
+                        const rentSpan = document.getElementById(`rent-${property.id}`);
+                        if (rentSpan) {
+                            rentSpan.textContent = `Aluguel: $${property.rent}`;
+                        }
+                    }
+
+                    message = `${currentPlayer.name} comprou "${property.name}" por $${property.price}.`;
+                } else {
+                    message = `${currentPlayer.name} não tem dinheiro suficiente para comprar "${property.name}".`;
+                }
+            } else {
+                message = `${currentPlayer.name} decidiu não comprar "${property.name}".`;
+            }
+
+            hideBuyPropertyPopup(); 
+            showMessagePopup(message); 
+        }
+
+        function showJailOptionsPopup(player) {
+            const jailPopupText = document.getElementById('jail-popup-text');
+            const jailPopupInfo = document.getElementById('jail-popup-info');
+            const payBailBtn = document.getElementById('pay-bail-btn');
+
+            jailPopupText.textContent = `${player.name}, você está na PRISÃO.`;
+            jailPopupInfo.innerHTML = `Seu dinheiro atual: <strong>$${player.money}</strong><br>Faltam ${player.inJail} rodada(s) para sair.<br>Você pode pagar uma fiança de $${JAIL_BAIL_AMOUNT} para sair agora.`;
+            
+            if (player.money >= JAIL_BAIL_AMOUNT) {
+                payBailBtn.disabled = false;
+                payBailBtn.textContent = `Pagar Fiança ($${JAIL_BAIL_AMOUNT})`;
+            } else {
+                payBailBtn.disabled = true;
+                payBailBtn.textContent = `Pagar Fiança (Dinheiro Insuficiente)`;
+            }
+
+            document.getElementById('jail-options-popup').style.display = 'flex';
+            document.getElementById('roll-dice-btn').disabled = true; 
+        }
+
+        function hideJailOptionsPopup() {
+            document.getElementById('jail-options-popup').style.display = 'none';
+        }
+
+        function handleJailOption(willPay) {
+            const currentPlayer = players[currentPlayerIndex];
+            let message = "";
+
+            hideJailOptionsPopup();
+
+            if (willPay) {
+                if (currentPlayer.money >= JAIL_BAIL_AMOUNT) {
+                    currentPlayer.money -= JAIL_BAIL_AMOUNT;
+                    currentPlayer.inJail = 0; 
+                    const playerCard = document.getElementById(`player-card-${currentPlayer.id}`);
+                    if(playerCard) {
+                        playerCard.classList.remove('in-jail'); 
+                    }
+                    message = `${currentPlayer.name} pagou a fiança de $${JAIL_BAIL_AMOUNT} e saiu da PRISÃO! Agora pode lançar o dado.`;
+                    
+                    bailPaidThisTurn = true; 
+
+                    showMessagePopup(message); 
+                } else {
+                    message = `${currentPlayer.name} não tem dinheiro suficiente para pagar a fiança. Fica na prisão.`;
+                    currentPlayer.inJail--; 
+                    showMessagePopup(message);
+                }
+            } else {
+                currentPlayer.inJail--;
+                message = `${currentPlayer.name} decidiu não pagar a fiança e fica na PRISÃO. Faltam ${currentPlayer.inJail} rodada(s).`;
+                showMessagePopup(message); 
+            }
+        }
+
+        function startMathQuiz(player) {
+            document.getElementById('message-popup').style.display = 'none'; 
+
+            const quizContainer = document.getElementById('math-quiz-container');
+            const quizQuestion = document.getElementById('quiz-question');
+            const quizAlternatives = document.getElementById('quiz-alternatives');
+
+            quizAlternatives.innerHTML = ''; 
+
+            const randomQuestionIndex = Math.floor(Math.random() * mathQuizQuestions.length);
+            const currentQuiz = mathQuizQuestions[randomQuestionIndex];
+
+            quizQuestion.textContent = currentQuiz.question;
+
+            currentQuiz.alternatives.forEach((alt, index) => {
+                const button = document.createElement('button');
+                button.classList.add('quiz-btn');
+                button.textContent = alt;
+                button.onclick = () => checkQuizAnswer(player, index === currentQuiz.correctAnswer);
+                quizAlternatives.appendChild(button);
+            });
+
+            quizContainer.style.display = 'block'; 
+            document.getElementById('roll-dice-btn').disabled = true; 
+        }
+
+        function checkQuizAnswer(player, isCorrect) {
+            const quizContainer = document.getElementById('math-quiz-container');
+            quizContainer.style.display = 'none'; 
+
+            let message = `${player.name} respondeu ao Quiz Matemático.`;
+            if (isCorrect) {
+                player.money += 1000;
+                message += ` Resposta CORRETA! Ganhou $1000.`;
+            } else {
+                player.money -= 1000;
+                message += ` Resposta INCORRETA! Perdeu $1000.`;
+            }
+            showMessagePopup(message); 
+        }
+
+        function finishTurn() {
+            const currentPlayer = players[currentPlayerIndex];
+            checkBankruptcy(currentPlayer); 
+            updateGameStatus();
+            players.filter(p => p.position === currentPlayer.position && !p.isBankrupt).forEach(p => movePlayerToken(p));
+
+            nextPlayerTurn();
+            document.getElementById('roll-dice-btn').disabled = false; 
+        }
+
+        function checkBankruptcy(player) {
+            if (player.money <= 0 && !player.isBankrupt) {
+                player.isBankrupt = true;
+                player.money = 0; 
+                if (player.tokenElement) {
+                    player.tokenElement.style.opacity = '0.3';
+                    player.tokenElement.style.border = '2px dashed red';
+                }
+                const playerCard = document.getElementById(`player-card-${player.id}`);
+                if(playerCard) {
+                    playerCard.classList.remove('current-turn', 'in-jail'); 
+                    playerCard.classList.add('bankrupt');
+                }
+                boardSquares.forEach(square => {
+                    if (square.owner === player.id) {
+                        square.owner = null; 
+                        const domSquare = document.getElementById(`square-${square.id}`);
+                        if (domSquare) {
+                            domSquare.classList.remove('owned-by-player');
+                            domSquare.style.borderColor = ''; 
+                            const rentSpan = document.getElementById(`rent-${square.id}`);
+                            if (rentSpan) {
+                                rentSpan.textContent = ''; 
+                            }
+                        }
+                    }
+                });
+                players.filter(p => p.position === player.position && !p.isBankrupt).forEach(p => movePlayerToken(p));
+            }
+        }
+
+        function nextPlayerTurn() {
+            let activePlayers = players.filter(p => !p.isBankrupt);
+
+            if (activePlayers.length <= 1) {
+                endGame(activePlayers[0]);
+                return;
+            }
+
+            let nextPlayerFound = false;
+            let originalIndex = currentPlayerIndex;
+            do {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+                if (!players[currentPlayerIndex].isBankrupt) {
+                    nextPlayerFound = true;
+                }
+            } while (!nextPlayerFound && currentPlayerIndex !== originalIndex);
+
+            if (!nextPlayerFound) {
+                endGame(null); 
+                return;
+            }
+
+            highlightCurrentPlayer();
+        }
+
+        function highlightCurrentPlayer() {
+            players.forEach((player, index) => {
+                const playerCard = document.getElementById(`player-card-${player.id}`);
+                if (playerCard) {
+                    if (index === currentPlayerIndex && !player.isBankrupt && player.inJail === 0) {
+                        playerCard.classList.add('current-turn');
+                        playerCard.classList.remove('in-jail');
+                    } else {
+                        playerCard.classList.remove('current-turn');
+                        if (player.inJail > 0 && !player.isBankrupt) { 
+                             playerCard.classList.add('in-jail');
+                        } else {
+                             playerCard.classList.remove('in-jail');
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateGameStatus() {
+            const playersStatusDiv = document.getElementById('players-status');
+            playersStatusDiv.innerHTML = '';
+
+            players.forEach(player => {
+                const playerCard = document.createElement('div');
+                playerCard.classList.add('player-card');
+                if (player.isBankrupt) {
+                    playerCard.classList.add('bankrupt');
+                } else if (player.inJail > 0) {
+                    playerCard.classList.add('in-jail');
+                }
+                playerCard.id = `player-card-${player.id}`;
+                // Alteração aqui: Removida a exibição do código/nome da cor no texto do card
+                playerCard.innerHTML = `
+                    <p style="color: ${teamColors[player.teamColorId]}; font-weight: bold;">${player.name}</p>
+                    <p>Dinheiro: $${player.money}</p>
+                    <p>Situação: ${player.isBankrupt ? 'FALIDO' : (player.inJail > 0 ? `PRESO` : 'Ativo')}</p>
+                `;
+                playersStatusDiv.appendChild(playerCard);
+            });
+            highlightCurrentPlayer();
+        }
+
+        function endGame(winner) {
+            document.getElementById('game-board').style.display = 'none';
+            document.getElementById('game-over').style.display = 'block';
+            if (winner) {
+                document.getElementById('winner-message').textContent = `O jogo terminou! O vencedor é ${winner.name} com $${winner.money}.`;
+            } else {
+                document.getElementById('winner-message').textContent = `O jogo terminou! Todos os jogadores faliram.`;
+            }
+            document.getElementById('roll-dice-btn').disabled = true;
+        }
+
+        window.addEventListener('resize', () => {
+            if (document.getElementById('game-board').style.display !== 'none') {
+                 calculateSquarePositions();
+                 players.forEach(player => movePlayerToken(player));
+            }
+        });
+
+    </script>
+</body>
+</html>
